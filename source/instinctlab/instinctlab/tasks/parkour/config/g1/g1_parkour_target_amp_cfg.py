@@ -31,9 +31,9 @@ G1_with_shoe_CFG.spawn.asset_path = os.path.abspath(
 
 @configclass
 class AmassMotionCfg(AmassMotionCfgBase):
-    path = os.path.expanduser("~/Datasets")
+    path = os.path.expanduser("/home/jr/ProjectInstinct/data_model/parkour_motion_reference/")
     retargetting_func = None
-    filtered_motion_selection_filepath = os.path.expanduser("~/Datasets/parkour_motion_without_run.yaml")
+    filtered_motion_selection_filepath = os.path.expanduser("/home/jr/ProjectInstinct/data_model/parkour_motion_reference/parkour_motion_without_run.yaml")
     motion_start_from_middle_range = [0.0, 0.9]
     motion_start_height_offset = 0.0
     ensure_link_below_zero_ground = False
@@ -106,7 +106,11 @@ class G1ParkourRoughEnvCfg_PLAY(G1ParkourRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        self.scene.terrain.terrain_generator = ROUGH_TERRAINS_CFG_PLAY
+        
+        # ⚠️ 1. 把 ROUGH_TERRAINS_CFG_PLAY 换回原始包含楼梯的 ROUGH_TERRAINS_CFG
+        # 原始代码是: self.scene.terrain.terrain_generator = ROUGH_TERRAINS_CFG_PLAY
+        self.scene.terrain.terrain_generator = ROUGH_TERRAINS_CFG
+       
         # make a smaller scene for play
         self.scene.num_envs = 10
         self.viewer = ViewerCfg(
@@ -121,13 +125,17 @@ class G1ParkourRoughEnvCfg_PLAY(G1ParkourRoughEnvCfg):
         self.terminations.root_height = None
         # spawn the robot randomly in the grid (instead of their terrain levels)
         # reduce the number of terrains to save memory
-        if self.scene.terrain.terrain_generator is not None:
-            self.scene.terrain.terrain_generator.num_rows = 4
-            self.scene.terrain.terrain_generator.num_cols = 10
+        # ⚠️ 2. 删除或注释掉强制缩小地形规模的代码，否则它只会生成前几块平地
+        # if self.scene.terrain.terrain_generator is not None:
+        #     self.scene.terrain.terrain_generator.num_rows = 4
+        #     self.scene.terrain.terrain_generator.num_cols = 10
 
         self.scene.leg_volume_points.debug_vis = True
         self.commands.base_velocity.debug_vis = True
         self.events.physics_material = None
+        # ⚠️⚠️ 加上下面这一行，彻底关闭坑人的虚拟边缘生成！ ⚠️⚠️
+        self.scene.terrain.virtual_obstacles = {}
+
         self.events.reset_robot_joints.params = {
             "position_range": (0.0, 0.0),
             "velocity_range": (0.0, 0.0),
